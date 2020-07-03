@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -37,12 +38,7 @@ func (c *Config) Conn(host string, port int, user string, dbname string) {
 func (c *Config) Start(port string) {
 	// gorrilla router
 	c.Routes()
-    c := cors.New(cors.Options{
-    AllowedOrigins: []string{"http://localhost:8000"},
-    AllowCredentials: true,
-    })
-
-    handler = c.Handler(c.Router)
+    handler := cors.Default().Handler(c.Router)
 	http.ListenAndServe(port, handler)
 }
 
