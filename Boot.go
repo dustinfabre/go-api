@@ -44,7 +44,7 @@ func (c *Config) Start(port string) {
 
 func (c *Config) Routes() {
 	c.Router = mux.NewRouter()
-	c.Router.HandleFunc("/v1/orders", c.getOrders).Methods("GET")
+	c.Router.HandleFunc("/v1/orders", c.getOrders).Methods("POST")
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
@@ -59,8 +59,9 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 }
 
 func (c *Config) getOrders(w http.ResponseWriter, r *http.Request) {
-	
-	products, err := getOrders(c.DB, 1, 5)
+	var page Pagination
+	json.NewDecoder(r.Body).Decode(&page)
+	products, err := getOrders(c.DB, page.Start, page.End)
     if err != nil {
         respondWithError(w, http.StatusInternalServerError, err.Error())
         return

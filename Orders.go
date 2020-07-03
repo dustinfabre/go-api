@@ -8,26 +8,42 @@ import (
 
 type Order struct {
 	ID	int `json:"id"`
-	Created_at time.Time	`json:"created_ate"`
-	Order_name string `json:"order_name"`
-	Customer_id string `json:"customer_id"`
+	Created_at time.Time	`json:"order_date"`
+    Order_name string `json:"order_name"`
+	Total_amount float64 `json:"total_amount"`
+	Delivered_amount float64 `json:"delivered_amount"`
+    Name string `json:"customer_name"`
+	Company_name string `json:"customer_company"`
 }
 
-var orders []Order = []Order{}
+type Pagination struct {
+	Start int `json:"start"`
+    End int `json:"end"`
+    Total int `json:"total"`
+}
+
 
 func getOrders(db *sql.DB, start, count int) ([]Order, error) {
 	rows, err := db.Query(
-        "SELECT * FROM public.orders LIMIT $1 OFFSET $2",
-        count, start)
+        "SELECT a.id, a.created_at, a.order_name, COALESCE((b.price_per_unit * b.quantity), 0) AS total_amount" +
+        ", COALESCE((c.delivered_quantity * b.price_per_unit), 0) AS delivered_amount, d.name, e.company_name " +
+        "FROM orders a " +
+        "JOIN order_items b ON a.id = b.order_id " +
+		"JOIN customers d ON a.customer_id = d.user_id " +
+		"JOIN customer_companies e ON d.company_id = e.company_id " +
+		"LEFT JOIN deliveries c ON b.id = c.order_item_id LIMIT $1 OFFSET $2",
+    count, start)
 
     if err != nil {
         return nil, err
     }
 	defer rows.Close()
-	
+    
+    var orders []Order = []Order{}
+
     for rows.Next() {
         var o Order
-        if err := rows.Scan(&o.ID, &o.Created_at, &o.Order_name, &o.Customer_id); err != nil {
+        if err := rows.Scan(&o.ID, &o.Created_at, &o.Order_name, &o.Total_amount,&o.Delivered_amount, &o.Name, &o.Company_name ); err != nil {
             return nil, err
         }
         orders = append(orders, o)
